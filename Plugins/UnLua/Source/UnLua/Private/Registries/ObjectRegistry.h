@@ -27,7 +27,7 @@ namespace UnLua
         TWeakObjectPtr<UObject> Object;
     };
 
-    class FObjectRegistry
+    class UNLUA_API FObjectRegistry
     {
     public:
         explicit FObjectRegistry(FLuaEnv* Env);

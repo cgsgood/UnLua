@@ -144,11 +144,12 @@ void ULuaFunction::Override(UFunction* Function, UClass* Class, bool bAddNew)
     UMetaData::CopyMetadata(Function, this);
 #endif
 
-    bActivated = false;
-    bAdded = bAddNew;
-    From = Function;
-
-    if (Function->GetNativeFunc() == execScriptCallLua)
+	// ----------add by cgsgood----------------begin
+	// 多个Lua Env时，不同Env环境下的LuaFunction会Override同一个UFunction,
+	// 此时UFunction的NativeFunc已经被指向execScriptCallLua了，
+	// 但是bActivated为False
+    if (bActivated && Function->GetNativeFunc() == execScriptCallLua)
+    // ----------add by cgsgood----------------end
     {
         // 目标UFunction可能已经被覆写过了
         const auto LuaFunction = Get(Function);
@@ -165,6 +166,12 @@ void ULuaFunction::Override(UFunction* Function, UClass* Class, bool bAddNew)
         Overridden->StaticLink(true);
         Overridden->SetNativeFunc(Function->GetNativeFunc());
     }
+
+	// ----------add by cgsgood----------------begin
+	bActivated = false;
+	bAdded = bAddNew;
+	From = Function;
+	// ----------add by cgsgood----------------end
 
     SetActive(true);
 }

@@ -146,17 +146,12 @@ namespace UnLua
     };
 
     /**
-     * Create Lua state
-     *
-     * @return - created Lua state
-     */
-    UE_DEPRECATED(4.20, "Use FLuaEnv to create lua vm instead.")
-    UNLUA_API lua_State* CreateState();
-
-    /**
      * @return - Lua state
      */
-    UNLUA_API lua_State* GetState();
+	// ----------add by cgsgood----------------begin
+	// 加入Object作为参考，考虑有多个独立的LuaEnv
+    UNLUA_API lua_State* GetState(UObject* Object);
+	// ----------add by cgsgood----------------end
 
     /**
      * Start up UnLua

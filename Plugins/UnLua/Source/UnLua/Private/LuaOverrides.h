@@ -62,6 +62,11 @@ namespace UnLua
         UClass* GetOrAddOverridesClass(UClass* Class);
 
         TMap<UClass*, TWeakObjectPtr<ULuaOverridesClass>> Overrides;
+
+    	// ----------add by cgsgood----------------begin
+    	// 多个LuaEnv情况下，不重复override UFunction，避免数据被多次写坏
+    	TMap<UClass*, TSharedPtr<TSet<UFunction*>>> AllEnvClass2OverrideFunctions;
+    	// ----------add by cgsgood----------------end
      
     };
 }

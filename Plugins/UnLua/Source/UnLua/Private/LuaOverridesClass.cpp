@@ -15,6 +15,7 @@
 #include "LuaOverridesClass.h"
 #include "LuaFunction.h"
 #include "Misc/EngineVersionComparison.h"
+#include "UObject/Package.h"
 
 ULuaOverridesClass* ULuaOverridesClass::Create(UClass* Class)
 {

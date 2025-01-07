@@ -30,6 +30,7 @@
 #include "UnLuaLib.h"
 #include "UnLuaSettings.h"
 #include "lstate.h"
+#include "GameFramework/Pawn.h"
 
 namespace UnLua
 {
@@ -173,7 +174,11 @@ namespace UnLua
 
     FLuaEnv::~FLuaEnv()
     {
+    	// ----------add by cgsgood----------------begin
+    	RemoveLuaStateName(L);
+    	// ----------add by cgsgood----------------end
         OnDestroyed.Broadcast(*this);
+    	
         lua_close(L);
         AllEnvs.Remove(L);
 
@@ -257,9 +262,12 @@ namespace UnLua
         return Name;
     }
 
-    void FLuaEnv::SetName(FString InName)
+    void FLuaEnv::SetName(const FString& InName)
     {
         Name = InName;
+    	// ----------add by cgsgood----------------begin
+    	SetLuaStateName(L, InName);
+    	// ----------add by cgsgood----------------end
     }
 
     void FLuaEnv::NotifyUObjectDeleted(const UObjectBase* ObjectBase, int32 Index)
@@ -475,7 +483,13 @@ namespace UnLua
         if (Status != LUA_OK)
         {
             const auto ErrMsg = lua_tostring(Thread, -1);
+        	// ----------add by cgsgood----------------begin
+#if WITH_EDITOR
+        	UE_LOG(LogUnLua, Error, TEXT("%s%s"), *Name, UTF8_TO_TCHAR(ErrMsg));
+#else
             UE_LOG(LogUnLua, Error, TEXT("%s"), UTF8_TO_TCHAR(ErrMsg));
+#endif
+        	// ----------add by cgsgood----------------end
         }
 
         ThreadToRef.Remove(Thread);
@@ -543,7 +557,30 @@ namespace UnLua
         ManualObjectReference.Remove(Object);
     }
 
-    int FLuaEnv::LoadFromBuiltinLibs(lua_State* L)
+	// ----------add by cgsgood----------------begin
+	// 为了在不同的Lua环境中打印不同的Client/Server标识，用于区分
+	static TMap<lua_State*, FString> sLuaStateNameMap;
+	static FString sEmptyLuaStateName { TEXT("") };
+
+	// 记录不同的LuaState所在的客户端/服务端的名字，方便日志区分
+	void FLuaEnv::SetLuaStateName(lua_State* L, const FString& Name)
+	{
+    	sLuaStateNameMap.FindOrAdd(L, Name) = Name;
+	}
+
+	void FLuaEnv::RemoveLuaStateName(lua_State* L)
+	{
+    	sLuaStateNameMap.Remove(L);
+	}
+
+	const FString& FLuaEnv::GetLuaStateName(lua_State* L)
+	{
+    	FString* FindNamePtr = sLuaStateNameMap.Find(L);
+    	return FindNamePtr ? *FindNamePtr : sEmptyLuaStateName;
+	}
+	// ----------add by cgsgood----------------end
+
+	int FLuaEnv::LoadFromBuiltinLibs(lua_State* L)
     {
         const FLuaEnv* Env = (FLuaEnv*)lua_touserdata(L, lua_upvalueindex(1));
         const FString Name = UTF8_TO_TCHAR(lua_tostring(L, 1));

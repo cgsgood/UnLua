@@ -26,6 +26,9 @@ namespace UnLua
                 OverridesClass->Restore();
              }
          }
+    	// ----------add by cgsgood----------------begin
+    	AllEnvClass2OverrideFunctions.Remove((UClass*)Object);
+    	// ----------add by cgsgood----------------end
     }
 
     void FLuaOverrides::OnUObjectArrayShutdown()
@@ -55,6 +58,14 @@ namespace UnLua
             }
         }
 
+    	// ----------add by cgsgood----------------begin
+    	// 多个LuaEnv情况下，OverridesClass已经被修改为LuaFunction了
+    	// 重复修改会导致数据被写坏
+    	TSharedPtr<TSet<UFunction*>>& OverrideFunctions = AllEnvClass2OverrideFunctions[Class];
+    	if(OverrideFunctions->Contains(Function))
+    		return;
+		// ----------add by cgsgood----------------end
+    	
         const auto OriginalFunctionFlags = Function->FunctionFlags;
         Function->FunctionFlags &= (~EFunctionFlags::FUNC_Native);
 
@@ -69,6 +80,11 @@ namespace UnLua
 
         LuaFunction->Next = OverridesClass->Children;
         OverridesClass->Children = LuaFunction;
+    	// ----------add by cgsgood----------------begin
+    	// 多个LuaEnv情况下，OverridesClass已经被修改为LuaFunction了
+    	// 如果再指向一次，则会产生环形链表，导致游戏结束时死循环
+    	OverrideFunctions->Add(Function);
+    	// ----------add by cgsgood----------------end
 
         LuaFunction->StaticLink(true);
         LuaFunction->Initialize();
@@ -86,6 +102,9 @@ namespace UnLua
         TWeakObjectPtr<ULuaOverridesClass> OverridesClass;
         if ( !Overrides.RemoveAndCopyValue( Class, OverridesClass) )
             return;
+    	// ----------add by cgsgood----------------begin
+    	AllEnvClass2OverrideFunctions.Remove(Class);
+    	// ----------add by cgsgood----------------end
             
         if ( !OverridesClass.IsValid() )
             return;
@@ -131,6 +150,9 @@ namespace UnLua
 
         const auto OverridesClass = ULuaOverridesClass::Create(Class);
         Overrides.Add(Class, OverridesClass);
+    	// ----------add by cgsgood----------------begin
+    	AllEnvClass2OverrideFunctions.Add(Class, MakeShared<TSet<UFunction*>>());
+    	// ----------add by cgsgood----------------end
         return OverridesClass;
     }
 }

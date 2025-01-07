@@ -39,33 +39,36 @@ void ULuaEnvLocator::Reset()
 
 UnLua::FLuaEnv* ULuaEnvLocator_ByGameInstance::Locate(const UObject* Object)
 {
-    if (!Object)
-        return GetDefault();
+	// ----------add by cgsgood----------------begin
+	UObject* IterObject = const_cast<UObject*>(Object);
 
-    UGameInstance* GameInstance;
-    if (Object->IsA(UGameInstance::StaticClass()))
-    {
-        GameInstance = (UGameInstance*)Object;
-    }
-    else
-    {
-        const auto Outer = Object->GetOuter();
-        if (!Outer)
-            return GetDefault();
+	UGameInstance* GameInstance = nullptr;
+	while(IsValid(IterObject))
+	{
+		const UClass* ObjectClass = IterObject->GetClass();
+		if(ObjectClass->IsChildOf(UGameInstance::StaticClass()))
+		{
+			GameInstance = (UGameInstance*)IterObject;
+			break;
+		}
+		
+		if(ObjectClass->IsChildOf(UWorld::StaticClass()))
+		{
+			GameInstance = ((UWorld*)IterObject)->GetGameInstance();
+			break;
+		}
+		
+		IterObject = IterObject->GetOuter();
+	}
 
-        const auto World = Outer->GetWorld();
-        if (!World)
-            return GetDefault();
+	if(!IsValid(GameInstance))
+		return nullptr;
+	// ----------add by cgsgood----------------end
 
-        GameInstance = World->GetGameInstance();
-        if (!GameInstance)
-            return GetDefault();
-    }
-
-    const auto Exists = Envs.Find(GameInstance);
+    const auto& Exists = Envs.Find(GameInstance);
     if (Exists)
-        return (*Exists).Get();
-
+        return Exists->Get();
+	
     const TSharedPtr<UnLua::FLuaEnv, ESPMode::ThreadSafe> Ret = MakeShared<UnLua::FLuaEnv, ESPMode::ThreadSafe>();
     Ret->SetName(FString::Printf(TEXT("Env_%d"), Envs.Num() + 1));
     Ret->Start();
@@ -84,7 +87,7 @@ void ULuaEnvLocator_ByGameInstance::HotReload()
 void ULuaEnvLocator_ByGameInstance::Reset()
 {
     Env.Reset();
-    for (auto Pair : Envs)
+    for (auto& Pair : Envs)
         Pair.Value.Reset();
     Envs.Empty();
 }

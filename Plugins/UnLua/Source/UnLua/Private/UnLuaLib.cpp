@@ -8,7 +8,6 @@ namespace UnLua
     namespace UnLuaLib
     {
         static const char* PACKAGE_PATH_KEY = "PackagePath";
-
         static FString GetMessage(lua_State* L)
         {
             const auto ArgCount = lua_gettop(L);
@@ -30,22 +29,46 @@ namespace UnLua
         static int LogInfo(lua_State* L)
         {
             const auto Msg = GetMessage(L);
+        	// ----------add by cgsgood----------------begin
+        	// 为了在不同的Lua环境中打印不同的Client/Server标识，用于区分
+#if WITH_EDITOR
+        	const FString& LName = FLuaEnv::GetLuaStateName(L);
+        	UE_LOG(LogUnLua, Log, TEXT("%s%s"), *LName, *Msg);
+#else
             UE_LOG(LogUnLua, Log, TEXT("%s"), *Msg);
+#endif
+        	// ----------add by cgsgood----------------end
             return 0;
         }
 
         static int LogWarn(lua_State* L)
         {
             const auto Msg = GetMessage(L);
+        	// ----------add by cgsgood----------------begin
+        	// 为了在不同的Lua环境中打印不同的Client/Server标识，用于区分
+#if WITH_EDITOR
+        	const FString& LName = FLuaEnv::GetLuaStateName(L);
+        	UE_LOG(LogUnLua, Warning, TEXT("%s%s"), *LName, *Msg);
+#else
             UE_LOG(LogUnLua, Warning, TEXT("%s"), *Msg);
+#endif
+        	// ----------add by cgsgood----------------end
             return 0;
         }
 
         static int LogError(lua_State* L)
         {
-            const auto Msg = GetMessage(L);
+			const auto Msg = GetMessage(L);
+        	// ----------add by cgsgood----------------begin
+        	// 为了在不同的Lua环境中打印不同的Client/Server标识，用于区分
+#if WITH_EDITOR
+        	const FString& LName = FLuaEnv::GetLuaStateName(L);
+			UE_LOG(LogUnLua, Error, TEXT("%s%s"), *LName, *Msg);
+#else
             UE_LOG(LogUnLua, Error, TEXT("%s"), *Msg);
-            return 0;
+#endif
+        	// ----------add by cgsgood----------------end
+			return 0;
         }
 
         static int HotReload(lua_State* L)
@@ -293,5 +316,5 @@ namespace UnLua
             lua_setfield(L, -2, PACKAGE_PATH_KEY);
             lua_pop(L, 2);
         }
-    }
+	}
 }

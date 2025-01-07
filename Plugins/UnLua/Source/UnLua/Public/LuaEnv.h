@@ -66,7 +66,7 @@ namespace UnLua
 
         const FString& GetName();
 
-        void SetName(FString InName);
+        void SetName(const FString& InName);
 
         virtual void NotifyUObjectDeleted(const UObjectBase* ObjectBase, int32 Index) override;
 
@@ -120,6 +120,14 @@ namespace UnLua
 
         void RemoveManualObjectReference(UObject* Object);
 
+		// ----------add by cgsgood----------------begin
+		bool IsPreBindClass() const { return bPreBindClass; }
+		void SetIsPreBindClass(bool b) { bPreBindClass = b; }
+		// 记录不同的LuaState所在的客户端/服务端的名字，方便日志区分
+		static void SetLuaStateName(lua_State* L, const FString& Name);
+		static void RemoveLuaStateName(lua_State* L);
+		static const FString& GetLuaStateName(lua_State* L);
+		// ----------add by cgsgood----------------end
     protected:
         lua_State* L;
 
@@ -184,5 +192,8 @@ namespace UnLua
         FString Name = TEXT("Env_0");
         bool bObjectArrayListenerRegistered;
         bool bStarted;
+    	// ----------add by cgsgood----------------begin
+    	bool bPreBindClass = false;
+    	// ----------add by cgsgood----------------end
     };
 }

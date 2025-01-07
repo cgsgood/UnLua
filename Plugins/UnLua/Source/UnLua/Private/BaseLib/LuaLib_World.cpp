@@ -15,7 +15,9 @@
 #include "UnLuaEx.h"
 #include "LuaCore.h"
 #include "LuaDynamicBinding.h"
+#include "Engine/Level.h"
 #include "Engine/World.h"
+#include "GameFramework/Pawn.h"
 
 /**
  * Spawn an actor.

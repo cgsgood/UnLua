@@ -14,6 +14,7 @@
 
 #include "LuaModuleLocator.h"
 #include "UnLuaInterface.h"
+#include "UObject/Package.h"
 
 FString ULuaModuleLocator::Locate(const UObject* Object)
 {

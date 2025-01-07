@@ -19,6 +19,8 @@
 #include "lua.hpp"
 #include <atomic>
 
+#include "HAL/ThreadSafeBool.h"
+
 namespace UnLua
 {
     class FLuaEnv;

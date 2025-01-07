@@ -108,9 +108,9 @@ static TValue* GetTValue(lua_State* L, int32 Index)
     CallInfo* ci = L->ci;
     if (Index > 0)
     {
-        StkId o = ci->func + Index;
-        check(Index <= L->ci->top - (ci->func + 1));
-        if (o >= L->top)
+        StkId o = ci->func.p + Index;
+        check(Index <= L->ci->top.p - (ci->func.p + 1));
+        if (o >= L->top.p)
         {
             return &G(L)->nilvalue;
         }
@@ -121,8 +121,8 @@ static TValue* GetTValue(lua_State* L, int32 Index)
     }
     else if (LUA_REGISTRYINDEX < Index)
     {  /* negative index */
-        check(Index != 0 && -Index <= L->top - (ci->func + 1));
-        return s2v(L->top + Index);
+        check(Index != 0 && -Index <= L->top.p - (ci->func.p + 1));
+        return s2v(L->top.p + Index);
     }
     else if (Index == LUA_REGISTRYINDEX)
     {
@@ -132,14 +132,14 @@ static TValue* GetTValue(lua_State* L, int32 Index)
     {  /* upvalues */
         Index = LUA_REGISTRYINDEX - Index;
         check(Index <= MAXUPVAL + 1);
-        if (ttislcf(s2v(ci->func)))
+        if (ttislcf(s2v(ci->func.p)))
         {
             /* light C function? */
             return &G(L)->nilvalue;  /* it has no upvalues */
         }
         else
         {
-            CClosure* func = clCvalue(s2v(ci->func));
+            CClosure* func = clCvalue(s2v(ci->func.p));
             return (Index <= func->nupvalues) ? &func->upvalue[Index - 1] : &G(L)->nilvalue;
         }
     }

@@ -30,6 +30,10 @@ public:
 
     virtual void Reset();
 
+	// ----------add by cgsgood----------------begin
+	virtual bool IsIndividualEnv() { return false; }
+	// ----------add by cgsgood----------------end
+
     TSharedPtr<UnLua::FLuaEnv, ESPMode::ThreadSafe> Env;
 };
 
@@ -43,6 +47,10 @@ public:
     virtual void HotReload() override;
 
     virtual void Reset() override;
+
+	// ----------add by cgsgood----------------begin
+	virtual bool IsIndividualEnv() override { return true; }
+	// ----------add by cgsgood----------------end
 
     UnLua::FLuaEnv* GetDefault();
 

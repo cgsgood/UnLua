@@ -62,7 +62,7 @@ namespace UnLua
         void GetFunctionNames(lua_State* L, int TableRef, TSet<FName>& FunctionNames);
 
         /* Get package.loaded[ModuleName] */
-        int GetLoadedModule(lua_State* L, const char* ModuleName);
+        UNLUA_API int GetLoadedModule(lua_State* L, const char* ModuleName);
 
         bool CheckPropertyOwner(lua_State* L, UnLua::ITypeOps* InProperty, void* InContainerPtr);
 

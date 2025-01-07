@@ -16,6 +16,7 @@
 #include "ISettingsModule.h"
 #include "ISettingsSection.h"
 #include "Modules/ModuleManager.h"
+#include "Editor.h"
 #endif
 
 #if ALLOW_CONSOLE
@@ -26,6 +27,7 @@
 #include "Engine/World.h"
 #include "UnLuaModule.h"
 #include "DefaultParamCollection.h"
+
 #include "GameDelegates.h"
 #include "LuaEnvLocator.h"
 #include "LuaOverrides.h"
@@ -101,31 +103,21 @@ namespace UnLua
                 GUObjectArray.AddUObjectDeleteListener(this);
 
                 const auto& Settings = *GetMutableDefault<UUnLuaSettings>();
-                const auto EnvLocatorClass = *Settings.EnvLocatorClass == nullptr ? ULuaEnvLocator::StaticClass() : *Settings.EnvLocatorClass;
+            	// ----------add by cgsgood----------------begin
+                //const auto EnvLocatorClass = *Settings.EnvLocatorClass == nullptr ? ULuaEnvLocator::StaticClass() : *Settings.EnvLocatorClass;
+            	const auto EnvLocatorClass = ULuaEnvLocator_ByGameInstance::StaticClass();
+            	// ----------add by cgsgood----------------end
                 EnvLocator = NewObject<ULuaEnvLocator>(GetTransientPackage(), EnvLocatorClass);
                 EnvLocator->AddToRoot();
                 FDeadLoopCheck::Timeout = Settings.DeadLoopCheck;
                 FDanglingCheck::Enabled = Settings.DanglingCheck;
 
-                for (const auto Class : TObjectRange<UClass>())
-                {
-                    for (const auto& ClassPath : Settings.PreBindClasses)
-                    {
-                        if (!ClassPath.IsValid())
-                            continue;
-
-                        const auto TargetClass = ClassPath.ResolveClass();
-                        if (!TargetClass)
-                            continue;
-
-                        if (Class->IsChildOf(TargetClass))
-                        {
-                            const auto Env = EnvLocator->Locate(Class);
-                            Env->TryBind(Class);
-                            break;
-                        }
-                    }
-                }
+            	// ----------add by cgsgood----------------begin
+            	if(!EnvLocator->IsIndividualEnv())
+            	{
+            		TryPreBindClasses(nullptr);
+            	}
+            	// ----------add by cgsgood----------------end
             }
             else
             {
@@ -157,15 +149,68 @@ namespace UnLua
         }
 
     private:
+    	// ----------add by cgsgood----------------begin
+    	void TryPreBindClasses(UObject* World = nullptr)
+    	{
+    		// ----------add by cgsgood----------------begin
+    		UnLua::FLuaEnv* Env = EnvLocator->Locate(World);
+    		if(Env->IsPreBindClass())
+    			return;
+    		
+    		Env->SetIsPreBindClass(true);
+    		const auto& Settings = *GetMutableDefault<UUnLuaSettings>();
+    		// Settings.PreBindClasses预加载，减少for (const auto Class : TObjectRange<UClass>())循环中的重复计算
+    		// 此处由42ms可变成23ms
+    		TArray<UClass*> PreBindClasses;
+    		PreBindClasses.Reserve(Settings.PreBindClasses.Num());
+    		for (const auto& ClassPath : Settings.PreBindClasses)
+    		{
+    			if (!ClassPath.IsValid())
+    				continue;
+
+    			const auto TargetClass = ClassPath.ResolveClass();
+    			if (!TargetClass)
+    				continue;
+
+    			PreBindClasses.Emplace(TargetClass);
+    		}
+
+    		for (const auto& Class : TObjectRange<UClass>())
+    		{
+    			for (const auto& TargetClass : PreBindClasses)
+    			{
+    				if (Class->IsChildOf(TargetClass))
+    				{
+    					Env->TryBind(Class);
+    					break;
+    				}
+    			}
+    		}
+    	}
+    	// ----------add by cgsgood----------------end
+    	
         virtual void NotifyUObjectCreated(const UObjectBase* ObjectBase, int32 Index) override
         {
             // UE_LOG(LogTemp, Log, TEXT("NotifyUObjectCreated : %p"), ObjectBase);
             if (!bIsActive)
                 return;
 
+    		if(!ObjectBase->GetClass()->ImplementsInterface(UUnLuaInterface::StaticClass()))
+    			return;
+
             UObject* Object = (UObject*)ObjectBase;
 
             const auto Env = EnvLocator->Locate(Object);
+    		// ----------add by cgsgood----------------begin
+    		// 某些Object不存在于指定的World下，所以它的Env是nullptr
+    		if(nullptr == Env)
+    			return;
+    		
+    		if(!Env->IsPreBindClass())
+    		{
+    			TryPreBindClasses(Object);
+    		}
+    		// ----------add by cgsgood----------------end
             // UE_LOG(LogTemp, Log, TEXT("Locate %s for %s"), *Env->GetName(), *ObjectBase->GetFName().ToString());
             Env->TryBind(Object);
             Env->TryReplaceInputs(Object);
@@ -195,7 +240,7 @@ namespace UnLua
             if (!IsInGameThread())
                 return;
 
-            for (auto& Pair : FLuaEnv::GetAll())
+            for (const auto& Pair : FLuaEnv::GetAll())
             {
                 if (!Pair.Key || !Pair.Value)
                     continue;
@@ -276,7 +321,7 @@ namespace UnLua
             return true;
         }
 
-        void PostLoadMapWithWorld(UWorld* World) const
+        void PostLoadMapWithWorld(UWorld* World)
         {
             if (!World || !bIsActive)
                 return;
@@ -289,6 +334,12 @@ namespace UnLua
             if (!Manager)
                 return;
 
+    		// ----------add by cgsgood----------------begin
+    		if(EnvLocator->IsIndividualEnv())
+    		{
+    			TryPreBindClasses(World);
+    		}
+    		// ----------add by cgsgood----------------end
             Manager->OnMapLoaded(World);
         }
 

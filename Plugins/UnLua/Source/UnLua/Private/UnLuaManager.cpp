@@ -25,6 +25,8 @@
 #include "LuaCore.h"
 #include "LuaFunction.h"
 #include "ObjectReferencer.h"
+#include "Engine/BlueprintGeneratedClass.h"
+#include "Engine/Level.h"
 
 
 static const TCHAR* SReadableInputEvent[] = { TEXT("Pressed"), TEXT("Released"), TEXT("Repeat"), TEXT("DoubleClick"), TEXT("Axis"), TEXT("Max") };

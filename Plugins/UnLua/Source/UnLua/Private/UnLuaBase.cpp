@@ -32,15 +32,12 @@ namespace UnLua
         return (ObjPtr->GetFlags() & (RF_BeginDestroyed | RF_FinishDestroyed)) == 0 && ObjPtr->IsValidLowLevelFast();
     }
 
-    lua_State* CreateState()
+	// ----------add by cgsgood----------------begin
+	// 加入Object作为参考，考虑有多个独立的LuaEnv
+    lua_State* GetState(UObject* Object)
     {
-        IUnLuaModule::Get().SetActive(true);
-        return GetState();
-    }
-
-    lua_State* GetState()
-    {
-        const auto Env = IUnLuaModule::Get().GetEnv();
+        const auto Env = IUnLuaModule::Get().GetEnv(Object);
+    	// ----------add by cgsgood----------------end
         return Env ? Env->GetMainState() : nullptr;
     }
 
